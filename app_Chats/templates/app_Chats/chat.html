@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Chats | {% endblock %}
+
+{% block content %}
+
+<!-- Error Message -->
+{% if error %}
+    <div class="alert alert-danger" role="alert">
+        {{ error }}
+    </div>
+{% endif %}
+
+<!-- Chat Container -->
+<div class="container">
+    <div class="d-flex justify-content-end">
+        <form action="{% url 'clear_chat' %}" method="post">
+            {% csrf_token %}
+            <button id="delete-chat" class="btn btn-danger btn-sm" type="submit" style="margin-top: 7px">
+                <i class="fa-solid fa-trash"></i> Clear Chat
+            </button>
+        </form>
+    </div>
+
+    <!-- Scrollable Chat Box (80% width, starting from top and stopping at chat input box) -->
+    <div id="chat-box" class="border rounded p-3 mb-3" style="height: 75vh; overflow-y: auto; width: 90%; margin: 40px auto; border-color: lightgray;">
+        
+        <!-- Display all uploaded images as individual chat bubbles on the right -->
+        {% for chat in chat_history %}
+            <div class="d-flex justify-content-end mb-2">
+                <div class="bg-primary text-white p-2 rounded" style="max-width: 40%;">
+                    {% if chat.user_image %}
+                        <img src="{{ chat.user_image.url }}" class="img-fluid" alt="Uploaded image" style="max-width: 100%; height: auto; border-radius: 5px;" />
+                    {% endif %}                    
+                    <p class="mt-2">{{ chat.caption }}</p>
+                </div>
+            </div> </br>
+            <!-- System's response aligned to the left -->
+            <div class="d-flex justify-content-start mb-2">
+                <div class="bg-secondary text-white p-2 rounded" style="max-width: 40%;">
+                    <p>{{ chat.system_response }}</p>
+                </div>
+            </div> </br>
+        {% endfor %}
+
+    </div>
+
+    <!-- Image Upload and Caption Interface -->
+    <form action="." method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Fixed-bottom input group for sending chat (image + caption) -->
+        <div class="input-group fixed-bottom mb-3" style="width: 80%; left: 10%; background-color: white;">
+            <!-- Hidden file input triggered by the "Upload Image" button -->
+            <input type="file" class="form-control d-none" id="fileInput" name="image" accept="image/*" required>
+            
+            <!-- "Upload Image" button with Font Awesome icon -->
+            <div class="position-relative">
+                <button type="button" class="btn btn-primary position-relative" id="button-addon1">
+                    <i class="fa-solid fa-upload"></i> <!-- Font Awesome upload icon -->
+                    <span id="badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                        1+
+                        <span class="visually-hidden">image selected</span>
+                    </span>
+                </button>
+            </div>
+
+            
+            <!-- Caption text input -->
+            <input type="text" name="caption" class="form-control" placeholder="Write a Caption (optional)" aria-label="Caption input" aria-describedby="button-addon1">
+            
+            <!-- Submit button -->
+            <button type="submit" class="btn btn-success">Send</button>
+        </div>
+    </form>
+
+</div>
+
+<!-- JavaScript to handle image uploads and dynamic badge behavior -->
+<script>
+    document.getElementById('button-addon1').addEventListener('click', function() {
+        document.getElementById('fileInput').click();
+    });
+
+    // Show the badge when an image is selected
+    document.getElementById('fileInput').addEventListener('change', function() {
+        const badge = document.getElementById('badge');
+        if (this.files && this.files.length > 0) {
+            badge.classList.remove('d-none');  // Show badge
+        } else {
+            badge.classList.add('d-none');  // Hide badge
+        }
+    });
+
+    function scrollToBottom() {
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
+    // Call the function when the page loads
+    document.addEventListener("DOMContentLoaded", function() {
+        // Delay scrolling to the bottom to allow for content to load
+        setTimeout(scrollToBottom, 100); // 100 milliseconds delay
+    });
+
+    
+</script>
+
+{% endblock %}
