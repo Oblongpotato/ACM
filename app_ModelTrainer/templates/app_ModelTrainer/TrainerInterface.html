@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Model Trainer | {% endblock %}
+{% block name %} Model Training Interface {% endblock %}
+{% block url %}"{% url 'chat' %}"{% endblock %}
+v{% block buttonName %}Chat Interface{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid" style="height: 100vh; overflow: hidden;">
+    <div class="row h-100">
+        <!-- Sidebar Section (Index) -->
+        <nav class="col-3 bg-light sidebar" style="height: 100%; overflow-y: auto; overflow-x: hidden;">
+            <div class="py-3">
+                <h5 class="text-center">Image Index
+                    <button 
+                        class="btn btn-outline-primary btn-sm ms-2" 
+                        onclick="document.getElementById('file-upload').click();"
+                        title="Add Images">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </h5>
+                <!-- Hidden file input for uploading images -->
+                <input 
+                id="file-upload" 
+                type="file" 
+                multiple 
+                accept="image/*" 
+                style="display: none;" 
+                onchange="uploadImages(event)">
+                <ul 
+                    class="nav flex-column" 
+                    id="image-index" 
+                    style="
+                        padding: 0; 
+                        margin: 0;
+                        list-style: none;
+                    ">
+                    {% for image in images %}
+                        <li class="nav-item" style="margin-bottom: 10px;">
+                            <a href="#" class="nav-link text-center" onclick="displayImage('{{ image.url }}')">
+                                <img 
+                                    src="{{ image.url }}" 
+                                    alt="Image {{ forloop.counter }}" 
+                                    class="img-thumbnail" 
+                                    style="display: block; margin: 0 auto; width:150px; height: 150px; object-fit: cover;">
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content Section (Image Display) -->
+        <main class="col-9 d-flex justify-content-center align-items-center" style="height: 100%;">
+            <div class="text-center">
+                <div class="image-display mb-4">
+                    <img 
+                        id="selected-image" 
+                        src="{% static 'default-placeholder.png' %}" 
+                        alt="Selected Image" 
+                        class="img-fluid rounded " 
+                        style="height: 300px; width: 400px; object-fit: contain;">
+                </div>
+                <div class="buttons">
+                    <button class="btn btn-outline-success me-2" onclick="rateImage('confident')">Confident</button>
+                    <button class="btn btn-outline-danger" onclick="rateImage('not-confident')">Not Confident</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+
+    function uploadImages(event) {
+        const files = event.target.files;
+        if (files.length === 0) {
+            return; // No files selected
+        }
+    
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('images', files[i]);
+        }
+    
+        fetch('/upload-images/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'), // Ensure CSRF protection
+            },
+            body: formData,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    location.reload(); // Reload the page to show the updated index
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error uploading images:', error);
+            });
+    }
+    
+
+    // Dynamically display the first image on page load or a message if no images exist
+    window.onload = function () {
+        const imageIndex = document.getElementById('image-index');
+        const selectedImage = document.getElementById('selected-image');
+        const images = imageIndex.querySelectorAll('a img'); // Fetch all images from the index
+
+        if (images.length > 0) {
+            // Display the first image in the index
+            const firstImageUrl = images[0].src;
+            selectedImage.src = firstImageUrl;
+        } else {
+            // Display a message when no image is available
+            const mainContent = document.querySelector('main .text-center');
+            mainContent.innerHTML = "<h5>No images found in the index. Please upload images to continue.</h5>";
+        }
+    };
+
+    // Dynamically display selected image when clicked
+    function displayImage(imageUrl) {
+        const selectedImage = document.getElementById('selected-image');
+        selectedImage.src = imageUrl;
+    }
+
+    function rateImage(confidence) {
+        const selectedImage = document.getElementById('selected-image');
+        if (selectedImage.src.includes('default-placeholder.png')) {
+            alert('Please select an image from the index before rating.');
+            return;
+        }
+
+        const imageName = selectedImage.src.split('/').pop(); // Get the image name from the src attribute
+
+        fetch('/rate-image/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'), // Ensure CSRF protection
+            },
+            body: JSON.stringify({
+                image_name: imageName,
+                confidence: confidence,
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                alert(data.message);
+                location.reload(); // Reload the page to show the next image
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    }
+
+    // Utility function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split('; ');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i];
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+{% endblock %}

@@ -13,7 +13,7 @@ model = tf.keras.models.load_model(model_path, custom_objects={'BatchNormalizati
 emotion_labels = ['confident', 'not confident']
 
 
-def predict_confidence(image_file):
+def predict_confidence(image_file, model_accuracy=None):
     
     # Open the uploaded file as an image
     image = Image.open(image_file).convert('RGB')
@@ -31,6 +31,7 @@ def predict_confidence(image_file):
 
     # Make a prediction
     prediction = model.predict(roi)[0]
+    confidence_score = max(prediction)
     label = emotion_labels[prediction.argmax()]
 
-    return label
+    return label, confidence_score, model_accuracy

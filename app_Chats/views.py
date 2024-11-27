@@ -17,9 +17,14 @@ def chat(request):
                 caption = image.name
             # system_response = "This is a default response." + caption
         
+            model_accuracy = 0.70
             # Predict confidence based on the uploaded image
-            confidence_label = predict_confidence.predict_confidence(image)
-            system_response = f"The system predicts the person in '{caption}' is {confidence_label}. "
+            confidence_label, confidence_score, accuracy  = predict_confidence.predict_confidence(image, model_accuracy)
+            system_response = (
+                f"The system predicts the person in '{caption}' is {confidence_label}.\n"
+                f"Prediction Confidence: {confidence_score:.2f}\n"
+                f"(Model Accuracy: {accuracy})"
+            )
             
             # Save both user message and system response to the database
             chat_message = ChatMessage(user_image=image, caption=caption, system_response=system_response)
