@@ -14,7 +14,7 @@ staticfiles/
 
 # Secrets
 .env
-settings.py (if you're using environment variables to manage secrets)
+settings.py 
 
 # Environment
 venv/
